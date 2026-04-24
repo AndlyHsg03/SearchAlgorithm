@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algoritma Pencarian — AI Course</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #09090E;
+  --bg2: #111118;
+  --bg3: #18181F;
+  --border: #2A2A38;
+  --text: #E8E8F0;
+  --sub: #8888A0;
+  --dim: #44445A;
+  --accent: #5B6EF5;
+  --bfs: #1A9CB0;
+  --dfs: #1DB877;
+  --ucs: #D4A017;
+  --greedy: #E05A3A;
+  --astar: #9B6BFF;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 32px 60px;
+}
+
+/* Header */
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sub);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 100px;
+  margin-bottom: 12px;
+}
+
+h1 {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(24px, 4vw, 38px);
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+h1 span {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--dim);
+}
+
+.subtitle {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--sub);
+  font-weight: 300;
+}
+
+/* Algo tabs */
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.tab {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--sub);
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--tc, #fff);
+  opacity: 0;
+  transition: opacity .2s;
+}
+
+.tab:hover { color: var(--text); border-color: var(--tc, #888); }
+.tab.on {
+  background: var(--tc);
+  color: #fff;
+  border-color: var(--tc);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--tc) 40%, transparent);
+}
+
+/* Main layout */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+}
+
+@media (max-width: 820px) {
+  .main { grid-template-columns: 1fr; }
+}
+
+/* SVG graph panel */
+.graph-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  min-height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#agraph {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+}
+
+/* Right panel */
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.card-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin-bottom: 6px;
+}
+
+.card-val {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 400;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+.card-val.big {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--accent-c, var(--accent));
+}
+
+.algo-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-c, var(--text));
+  margin-bottom: 4px;
+}
+
+.algo-full {
+  font-size: 12px;
+  color: var(--sub);
+  margin-bottom: 6px;
+}
+
+.algo-tag {
+  display: inline-block;
+  font-size: 10px;
+  background: color-mix(in srgb, var(--accent-c) 15%, transparent);
+  color: var(--accent-c);
+  border: 1px solid color-mix(in srgb, var(--accent-c) 40%, transparent);
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+/* Message */
+.msg {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-c, var(--accent));
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
+  min-height: 72px;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+button {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  transition: all .15s;
+}
+
+button:hover {
+  background: var(--bg2);
+  border-color: var(--accent-c, var(--accent));
+  color: var(--accent-c, var(--accent));
+}
+
+button.primary {
+  background: var(--accent-c, var(--accent));
+  border-color: var(--accent-c, var(--accent));
+  color: #fff;
+}
+
+button.primary:hover {
+  opacity: .85;
+  color: #fff;
+}
+
+.ctr {
+  margin-left: auto;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--sub);
+}
+
+.leg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Progress bar */
+.progress-wrap {
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent-c, var(--accent));
+  border-radius: 2px;
+  transition: width .3s;
+}
+
+/* Step dots */
+.step-dots {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all .2s;
+}
+
+.step-dot.done { background: var(--accent-c, var(--accent)); }
+.step-dot.active {
+  background: var(--accent-c, var(--accent));
+  box-shadow: 0 0 6px var(--accent-c, var(--accent));
+  transform: scale(1.4);
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div>
+      <div class="badge">Kecerdasan Buatan — Algoritma Pencarian</div>
+      <h1>Search<br><span>Algorithms</span></h1>
+      <p class="subtitle">Visualisasi Interaktif · BFS · DFS · UCS · Greedy · A*</p>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);text-align:right;margin-top:8px;line-height:2">
+      Graph: 7 nodes<br>Start: <span style="color:var(--dfs)">A</span> → Goal: <span style="color:var(--greedy)">G</span>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs"></div>
+
+  <!-- Progress -->
+  <div class="progress-wrap"><div class="progress-bar" id="pbar"></div></div>
+  <div class="step-dots" id="sdots"></div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="graph-panel">
+      <svg id="agraph" viewBox="0 0 560 320" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div class="right">
+      <div class="card">
+        <div class="algo-name" id="an">BFS</div>
+        <div class="algo-full" id="af">Breadth-First Search</div>
+        <span class="algo-tag" id="at">Solusi dangkal</span>
+      </div>
+
+      <div class="card">
+        <div class="card-label" id="fl-label">Antrian (Queue)</div>
+        <div class="card-val big" id="a-frontier">—</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Sudah Dikunjungi</div>
+        <div class="card-val big" id="a-visited">—</div>
+      </div>
+
+      <div class="msg" id="amsg">Pilih algoritma di atas lalu tekan Selanjutnya.</div>
+
+      <div class="controls">
+        <button onclick="astep(-1)">◀ Kembali</button>
+        <button class="primary" onclick="astep(1)">Selanjutnya ▶</button>
+        <button onclick="areset()">↺ Ulang</button>
+        <span class="ctr" id="actr"></span>
+      </div>
+
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" id="l-cur"></div>Sedang diproses</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#333355;border:1px solid #888"></div>Frontier</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#2A2A3A;border:1px solid #555"></div>Dikunjungi</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#2A2A3A;border:2px dashed gold"></div>Goal</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const AN={A:{x:280,y:50,h:6},B:{x:120,y:155,h:5},C:{x:440,y:155,h:2},D:{x:40,y:275,h:8},E:{x:200,y:275,h:7},F:{x:360,y:275,h:4},G:{x:500,y:275,h:0}};
+const AE=[{u:'A',v:'B',w:1},{u:'A',v:'C',w:4},{u:'B',v:'D',w:2},{u:'B',v:'E',w:5},{u:'C',v:'F',w:1},{u:'C',v:'G',w:3}];
+
+const AA={
+  bfs:{name:'BFS',full:'Breadth-First Search',color:'#1A9CB0',tag:'Cocok: solusi dangkal',fl:'Queue — FIFO',steps:[
+    {v:[],f:['A'],cur:null,path:[],msg:'Inisialisasi: masukkan simpul awal A ke antrian.'},
+    {v:['A'],f:['B','C'],cur:'A',path:[],msg:'Kunjungi A → tambah semua tetangga B, C ke antrian (level 1).'},
+    {v:['A','B'],f:['C','D','E'],cur:'B',path:[],msg:'Kunjungi B → tambah D, E ke antrian (level 2). C masih menunggu.'},
+    {v:['A','B','C'],f:['D','E','F','G'],cur:'C',path:[],msg:'Kunjungi C → tambah F, G ke antrian (level 2). Semua level 1 selesai!'},
+    {v:['A','B','C','D'],f:['E','F','G'],cur:'D',path:[],msg:'Kunjungi D → simpul daun, tidak ada tetangga baru.'},
+    {v:['A','B','C','D','E'],f:['F','G'],cur:'E',path:[],msg:'Kunjungi E → simpul daun.'},
+    {v:['A','B','C','D','E','F'],f:['G'],cur:'F',path:[],msg:'Kunjungi F → simpul daun.'},
+    {v:['A','B','C','D','E','F','G'],f:[],cur:'G',path:[['A','C'],['C','G']],msg:'🎯 Goal G ditemukan di kedalaman 2! BFS menjamin solusi dengan kedalaman paling dangkal.',done:true}
+  ]},
+  dfs:{name:'DFS',full:'Depth-First Search',color:'#1DB877',tag:'Cocok: memori terbatas',fl:'Stack — LIFO',steps:[
+    {v:[],f:['A'],cur:null,path:[],msg:'Inisialisasi: masukkan simpul awal A ke stack.'},
+    {v:['A'],f:['C','B'],cur:'A',path:[],msg:'Kunjungi A → push C, B ke stack. B di atas (LIFO) → B diproses lebih dulu.'},
+    {v:['A','B'],f:['C','E','D'],cur:'B',path:[['A','B']],msg:'Kunjungi B → push E, D. D di atas → DFS masuk lebih dalam ke D.'},
+    {v:['A','B','D'],f:['C','E'],cur:'D',path:[['A','B'],['B','D']],msg:'Kunjungi D → simpul daun. Tidak ada tetangga → backtrack ke E!'},
+    {v:['A','B','D','E'],f:['C'],cur:'E',path:[['A','B'],['B','E']],msg:'Kunjungi E → simpul daun. Backtrack! Stack kembali ke C.'},
+    {v:['A','B','D','E','C'],f:['G','F'],cur:'C',path:[['A','C']],msg:'Kunjungi C → push G, F. G di atas → G diproses lebih dulu.'},
+    {v:['A','B','D','E','C','F'],f:['G'],cur:'F',path:[['A','C'],['C','F']],msg:'F di atas G → Kunjungi F dulu. Simpul daun. Backtrack!'},
+    {v:['A','B','D','E','C','F','G'],f:[],cur:'G',path:[['A','C'],['C','G']],msg:'🎯 Goal G ditemukan! DFS hemat memori — hanya menyimpan satu jalur aktif sekaligus.',done:true}
+  ]},
+  ucs:{name:'UCS',full:'Uniform Cost Search',color:'#D4A017',tag:'Cocok: cost berbeda-beda',fl:'Priority Queue — urut g (cost)',steps:[
+    {v:[],f:['A(g=0)'],cur:null,path:[],msg:'Inisialisasi: A dengan cost g=0. Selalu pilih node dengan cost kumulatif paling kecil!'},
+    {v:['A'],f:['B(g=1)','C(g=4)'],cur:'A',path:[],msg:'Kunjungi A(g=0) → B(0+1=1), C(0+4=4). Pilih B karena g lebih kecil.'},
+    {v:['A','B'],f:['D(g=3)','C(g=4)','E(g=6)'],cur:'B',path:[],msg:'Kunjungi B(g=1) → D(1+2=3), E(1+5=6). D masuk antrian, C(4) masih ada.'},
+    {v:['A','B','D'],f:['C(g=4)','E(g=6)'],cur:'D',path:[],msg:'Kunjungi D(g=3) → daun, bukan goal. Pilih C(g=4) berikutnya.'},
+    {v:['A','B','D','C'],f:['F(g=5)','E(g=6)','G(g=7)'],cur:'C',path:[],msg:'Kunjungi C(g=4) → F(4+1=5), G(4+3=7). G masuk antrian!'},
+    {v:['A','B','D','C','F'],f:['E(g=6)','G(g=7)'],cur:'F',path:[],msg:'Kunjungi F(g=5) → daun, bukan goal. Lanjut ke E(6).'},
+    {v:['A','B','D','C','F','E'],f:['G(g=7)'],cur:'E',path:[],msg:'Kunjungi E(g=6) → daun, bukan goal. Hanya G tersisa.'},
+    {v:['A','B','D','C','F','E','G'],f:[],cur:'G',path:[['A','C'],['C','G']],msg:'🎯 Goal G! Cost optimal = 7 (A→C→G = 4+3). UCS menjamin jalur berbiaya paling murah.',done:true}
+  ]},
+  greedy:{name:'Greedy',full:'Greedy Best-First Search',color:'#E05A3A',tag:'Cocok: solusi cepat',fl:'Priority Queue — urut h (heuristik)',steps:[
+    {v:[],f:['A(h=6)'],cur:null,path:[],msg:'Inisialisasi: h = estimasi jarak ke G. A memiliki h=6. Selalu pilih h terkecil!'},
+    {v:['A'],f:['C(h=2)','B(h=5)'],cur:'A',path:[],msg:'Kunjungi A → B(h=5), C(h=2). Pilih C karena h paling kecil (paling dekat ke G)!'},
+    {v:['A','C'],f:['G(h=0)','F(h=4)'],cur:'C',path:[['A','C']],msg:'Kunjungi C → F(h=4), G(h=0). Pilih G karena h=0 → ini tujuannya!'},
+    {v:['A','C','G'],f:[],cur:'G',path:[['A','C'],['C','G']],msg:'🎯 Goal G ditemukan hanya 3 langkah! Greedy sangat cepat, tapi tidak selalu menghasilkan jalur optimal.',done:true}
+  ]},
+  astar:{name:'A★',full:'A* Search',color:'#9B6BFF',tag:'Cocok: jalur optimal + efisien',fl:'Priority Queue — urut f = g + h',steps:[
+    {v:[],f:['A(f=6)'],cur:null,path:[],msg:'Inisialisasi: f = g + h. A: f = 0 + 6 = 6. A* menggabungkan cost nyata (g) dan estimasi ke tujuan (h).'},
+    {v:['A'],f:['B(f=6)','C(f=6)'],cur:'A',path:[],msg:'Kunjungi A(f=6) → B(g=1,h=5,f=6) dan C(g=4,h=2,f=6). Keduanya f=6, pilih B (tie-breaking).'},
+    {v:['A','B'],f:['C(f=6)','D(f=11)','E(f=13)'],cur:'B',path:[],msg:'Kunjungi B(f=6) → D(g=3,h=8,f=11), E(g=6,h=7,f=13). C(f=6) masih prioritas!'},
+    {v:['A','B','C'],f:['G(f=7)','F(f=9)','D(f=11)','E(f=13)'],cur:'C',path:[],msg:'Kunjungi C(f=6) → F(g=5,h=4,f=9), G(g=7,h=0,f=7). G masuk dengan f=7!'},
+    {v:['A','B','C','G'],f:[],cur:'G',path:[['A','C'],['C','G']],msg:'🎯 Goal G ditemukan! g=7, h=0, f=7. A* menemukan jalur OPTIMAL dan lebih efisien dari UCS karena dipandu heuristik h.',done:true}
+  ]}
+};
+
+let algo='bfs', sidx=0;
+function gs(){return AA[algo].steps[sidx];}
+function setColor(c){
+  document.documentElement.style.setProperty('--accent-c', c);
+  document.getElementById('l-cur').style.background = c;
+}
+
+function draw(){
+  const a=AA[algo], s=gs();
+  setColor(a.color);
+
+  // Update info
+  document.getElementById('an').textContent=a.name;
+  document.getElementById('af').textContent=a.full;
+  document.getElementById('at').textContent=a.tag;
+  document.getElementById('fl-label').textContent=a.fl;
+  document.getElementById('a-frontier').textContent=s.f.length?s.f.join('  ·  '):'(kosong)';
+  document.getElementById('a-visited').textContent=s.v.length?s.v.join(' → '):'(belum ada)';
+  document.getElementById('amsg').textContent=s.msg;
+  document.getElementById('actr').textContent=`${sidx+1} / ${a.steps.length}`;
+
+  // Progress
+  const pct=sidx/(a.steps.length-1)*100;
+  document.getElementById('pbar').style.width=pct+'%';
+
+  // Step dots
+  const dotsEl=document.getElementById('sdots');
+  dotsEl.innerHTML='';
+  for(let i=0;i<a.steps.length;i++){
+    const d=document.createElement('div');
+    d.className='step-dot'+(i<sidx?' done':i===sidx?' active':'');
+    dotsEl.appendChild(d);
+  }
+
+  // SVG
+  const showH=(algo==='greedy'||algo==='astar');
+  let h='';
+  const defs=`<defs>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L6,3 z" fill="#444466"/>
+    </marker>
+  </defs>`;
+  h+=defs;
+
+  // Edges
+  for(const e of AE){
+    const n1=AN[e.u], n2=AN[e.v];
+    const onPath=s.path.some(p=>(p[0]===e.u&&p[1]===e.v)||(p[0]===e.v&&p[1]===e.u));
+    const sc=onPath?a.color:'#2A2A3A';
+    const sw=onPath?3:1.5;
+    // Shorten line to not overlap node circles
+    const dx=n2.x-n1.x, dy=n2.y-n1.y, len=Math.sqrt(dx*dx+dy*dy);
+    const r=26, x1=n1.x+dx/len*r, y1=n1.y+dy/len*r, x2=n2.x-dx/len*r, y2=n2.y-dy/len*r;
+    h+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${sc}" stroke-width="${sw}" stroke-opacity="${onPath?1:.5}" ${onPath?'filter="url(#glow)"':''}/>`;
+    const mx=(n1.x+n2.x)/2, my=(n1.y+n2.y)/2;
+    const ox=-dy/len*14, oy=dx/len*14;
+    h+=`<text x="${mx+ox}" y="${my+oy}" text-anchor="middle" dominant-baseline="central" font-size="12" font-family="Space Mono, monospace" fill="${onPath?a.color:'#444466'}" font-weight="700">${e.w}</text>`;
+  }
+
+  // Nodes
+  for(const[id,n] of Object.entries(AN)){
+    const isCur=s.cur===id;
+    const isVis=s.v.includes(id);
+    const inFr=!isCur&&!isVis&&s.f.some(f=>f===id||f.startsWith(id+'('));
+    const isDone=s.done&&id==='G';
+
+    let fill, stroke, tc, sw, glowFilter='';
+    if(isCur||isDone){
+      fill=a.color; stroke=a.color; tc='#fff'; sw=0;
+      glowFilter='filter="url(#glow)"';
+    } else if(isVis){
+      fill='#1A1A28'; stroke='#444466'; tc='#6666AA'; sw=1;
+    } else if(inFr){
+      fill='#111130'; stroke=a.color; tc='#ccccff'; sw=2;
+    } else {
+      fill='#0E0E1A'; stroke='#2A2A44'; tc='#444466'; sw=1;
+    }
+
+    // Ring for current
+    if(isCur){
+      h+=`<circle cx="${n.x}" cy="${n.y}" r="34" fill="none" stroke="${a.color}" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="4 3"/>`;
+    }
+    if(id==='G'&&!isDone){
+      h+=`<circle cx="${n.x}" cy="${n.y}" r="32" fill="none" stroke="gold" stroke-width="1.5" stroke-opacity="0.4" stroke-dasharray="4 3"/>`;
+    }
+
+    h+=`<circle cx="${n.x}" cy="${n.y}" r="26" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${glowFilter}/>`;
+    h+=`<text x="${n.x}" y="${n.y}" text-anchor="middle" dominant-baseline="central" font-size="16" font-family="Space Mono, monospace" font-weight="700" fill="${tc}">${id}</text>`;
+
+    // Labels
+    if(id==='A') h+=`<text x="${n.x}" y="${n.y-40}" text-anchor="middle" font-size="10" font-family="DM Sans,sans-serif" fill="#5B6EF5" letter-spacing="1">START</text>`;
+    if(id==='G') h+=`<text x="${n.x}" y="${n.y-40}" text-anchor="middle" font-size="10" font-family="DM Sans,sans-serif" fill="gold" letter-spacing="1">GOAL</text>`;
+
+    if(showH){
+      h+=`<text x="${n.x}" y="${n.y+42}" text-anchor="middle" font-size="11" font-family="Space Mono, monospace" fill="${inFr||isCur?a.color:'#444466'}">h=${n.h}</text>`;
+    }
+  }
+
+  document.getElementById('agraph').innerHTML=h;
+}
+
+function astep(d){const mx=AA[algo].steps.length-1;sidx=Math.max(0,Math.min(mx,sidx+d));draw();}
+function areset(){sidx=0;draw();}
+
+// Build tabs
+const tabsEl=document.getElementById('tabs');
+for(const[k,v] of Object.entries(AA)){
+  const b=document.createElement('button');
+  b.className='tab'+(k==='bfs'?' on':'');
+  b.style.setProperty('--tc',v.color);
+  b.dataset.k=k;
+  b.textContent=v.name;
+  b.title=v.full;
+  b.onclick=()=>{
+    algo=k; sidx=0;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.k===k));
+    draw();
+  };
+  tabsEl.appendChild(b);
+}
+
+// Keyboard nav
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();astep(1);}
+  if(e.key==='ArrowLeft'){e.preventDefault();astep(-1);}
+  const keys={'1':'bfs','2':'dfs','3':'ucs','4':'greedy','5':'astar'};
+  if(keys[e.key]){
+    algo=keys[e.key]; sidx=0;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.k===algo));
+    draw();
+  }
+});
+
+draw();
+</script>
+</body>
+</html>
